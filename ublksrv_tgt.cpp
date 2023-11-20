@@ -690,9 +690,9 @@ static int cmd_dev_add(int argc, char *argv[])
 		{ "debug_mask",	1,	NULL, 0},
 		{ "unprivileged",	0,	NULL, 0},
 		{ "usercopy",	0,	NULL, 0},
-		{ NULL }
+		{},
 	};
-	struct ublksrv_dev_data data = {0};
+	struct ublksrv_dev_data data = {};
 	struct ublksrv_ctrl_dev *dev;
 	const struct ublksrv_tgt_type *tgt_type;
 	int opt, ret;
@@ -923,7 +923,7 @@ static int cmd_dev_del(int argc, char *argv[])
 	static const struct option longopts[] = {
 		{ "number",		1,	NULL, 'n' },
 		{ "all",		0,	NULL, 'a' },
-		{ NULL }
+		{},
 	};
 	int number = -1;
 	int opt, ret, i;
@@ -986,7 +986,7 @@ static int cmd_list_dev_info(int argc, char *argv[])
 	static const struct option longopts[] = {
 		{ "number",		0,	NULL, 'n' },
 		{ "verbose",		0,	NULL, 'v' },
-		{ NULL }
+		{},
 	};
 	int number = -1;
 	int opt, i;
@@ -1075,7 +1075,7 @@ static int __cmd_dev_user_recover(int number, bool verbose)
 	};
 	struct ublksrv_ctrl_dev_info  dev_info;
 	struct ublksrv_ctrl_dev *dev;
-	struct ublksrv_tgt_base_json tgt_json = {0};
+	struct ublksrv_tgt_base_json tgt_json = {};
 	char *buf = NULL;
 	char pid_file[64];
 	int ret;
@@ -1174,7 +1174,7 @@ static int cmd_dev_user_recover(int argc, char *argv[])
 	static const struct option longopts[] = {
 		{ "number",		0,	NULL, 'n' },
 		{ "verbose",	0,	NULL, 'v' },
-		{ NULL }
+		{},
 	};
 	int number = -1;
 	int opt;

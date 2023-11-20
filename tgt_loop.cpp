@@ -112,7 +112,7 @@ static int loop_init_tgt(struct ublksrv_dev *dev, int type, int argc, char
 	static const struct option lo_longopts[] = {
 		{ "file",		1,	NULL, 'f' },
 		{ "buffered_io",	no_argument, &buffered_io, 1},
-		{ NULL }
+		{},
 	};
 	unsigned long long bytes;
 	struct stat st;
