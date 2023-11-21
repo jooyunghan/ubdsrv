@@ -365,12 +365,26 @@ static int loop_queue_tgt_io(const struct ublksrv_queue *q,
 	return 1;
 }
 
-static co_io_job __loop_handle_io_async(const struct ublksrv_queue *q,
-		const struct ublk_io_data *data, int tag)
-{
+void resume_coroutine(co_io_job* co) {
+	if (co && co->suspension_point >= 0) {
+		co->fn(co);
+	}
+}
+
+#define CO_BEGIN(co)    switch((co)->suspension_point) { case -1: return; case 0:
+#define CO_YIELD(co)    do { (co)->suspension_point = __LINE__; return; \
+                            case __LINE__:; } while (0)
+#define CO_END(co)      } (co)->suspension_point = -1; return;
+
+static void __loop_handle_io_async(co_io_job* co) {
+	const struct ublksrv_queue *q = co->q;
+	const struct ublk_io_data *data = co->data;
+	int tag = co->tag;
+
 	int ret;
 	struct ublk_io_tgt *io = __ublk_get_io_tgt_data(data);
 
+	CO_BEGIN(co);
 	io->queued_tgt_io = 0;
  again:
 	ret = loop_queue_tgt_io(q, data, tag);
@@ -379,7 +393,7 @@ static co_io_job __loop_handle_io_async(const struct ublksrv_queue *q,
 			ublk_err("bad queued_tgt_io %d\n", io->queued_tgt_io);
 		io->queued_tgt_io += 1;
 
-		co_await__suspend_always(tag);
+		CO_YIELD(co);
 		io->queued_tgt_io -= 1;
 
 		if (io->tgt_io_cqe->res == -EAGAIN)
@@ -391,6 +405,7 @@ static co_io_job __loop_handle_io_async(const struct ublksrv_queue *q,
 	} else {
 		ublk_err( "no sqe %d\n", tag);
 	}
+	CO_END(co);
 }
 
 static int loop_handle_io_async(const struct ublksrv_queue *q,
@@ -398,7 +413,15 @@ static int loop_handle_io_async(const struct ublksrv_queue *q,
 {
 	struct ublk_io_tgt *io = __ublk_get_io_tgt_data(data);
 
-	io->co = __loop_handle_io_async(q, data, data->tag);
+	// Poorman's coroutine with a context struct.
+	io->co = {
+		.q = q,
+		.data = data,
+		.tag = data->tag,
+		.suspension_point = 0,
+		.fn = &__loop_handle_io_async,
+	};
+	resume_coroutine(&io->co);
 	return 0;
 }
 
@@ -419,7 +442,7 @@ static void loop_tgt_io_done(const struct ublksrv_queue *q,
 			user_data_to_tag(cqe->user_data),
 			user_data_to_op(cqe->user_data));
 	io->tgt_io_cqe = cqe;
-	io->co.resume();
+	resume_coroutine(&io->co);
 }
 
 static void loop_deinit_tgt(const struct ublksrv_dev *dev)

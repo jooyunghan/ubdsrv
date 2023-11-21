@@ -15,7 +15,6 @@
 #include <sys/ioctl.h>
 
 #include <libgen.h>
-#include <coroutine>
 #include <iostream>
 #include <type_traits>
 
@@ -35,7 +34,7 @@ static inline unsigned ilog2(unsigned x)
 }
 
 #define MAX_NR_UBLK_DEVS	128
-#define UBLKSRV_PID_DIR  "/tmp/ublksrvd"
+#define UBLKSRV_PID_DIR  "/data/local/tmp/ublksrvd"
 
 /* json device data is stored at this offset of pid file */
 #define JSON_OFFSET   32
@@ -63,40 +62,18 @@ static inline unsigned ublksrv_convert_cmd_op(const struct ublksrv_io_desc *iod)
 	}
 }
 
-/*
- * Our convention is to use this macro instead of raw `co_await` to make it
- * easy to log `tag` when debugging coroutine issues.
- */
-#define co_await__suspend_always(tag) {                                       \
-	static_assert(std::is_same<decltype(tag), int>::value, "tag not int");\
-	co_await std::suspend_always();                                       \
-}
-
-using co_handle_type = std::coroutine_handle<>;
 struct co_io_job {
-    struct promise_type {
-        co_io_job get_return_object() {
-            return {std::coroutine_handle<promise_type>::from_promise(*this)};
-        }
-        std::suspend_never initial_suspend() {
-            return {};
-        }
-        std::suspend_never final_suspend() noexcept {
-            return {};
-        }
-        void return_void() {}
-        void unhandled_exception() {}
-    };
+	const struct ublksrv_queue *q;
+	const struct ublk_io_data *data;
+	int tag;
 
-    co_handle_type coro;
-
-    co_io_job(co_handle_type h): coro(h) {}
-
-    operator co_handle_type() const { return coro; }
+	// suspendable
+	int suspension_point;
+	void (*fn)(co_io_job*);
 };
 
 struct ublk_io_tgt {
-	co_handle_type co;
+	co_io_job co;
 	const struct io_uring_cqe *tgt_io_cqe;
 	int queued_tgt_io;	/* obsolete */
 };

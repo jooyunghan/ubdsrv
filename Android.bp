@@ -1,0 +1,50 @@
+
+cc_library_static {
+    name: "libublksrv",
+    srcs: [
+        "lib/ublksrv_cmd.c",
+        "lib/ublksrv_json.cpp",
+        "lib/ublksrv.c",
+        "lib/utils.c",
+        "lib/ublksrv_aio.c",
+    ],
+    include_dirs: ["bionic/libc/kernel"],
+    local_include_dirs: [
+        "compat",
+        "lib",
+        "include",
+    ],
+    export_include_dirs: [
+        "include",
+    ],
+    cflags: [
+        "-DUBLKSRV_INTERNAL_H_",
+        "-D_GNU_SOURCE",
+        "-Wno-unused-parameter",
+        "-Wno-implicit-function-declaration",
+    ],
+    static_libs: [
+        "liburing",
+    ],
+    compile_multilib: "64",
+}
+
+cc_binary {
+    name: "ublk",
+    srcs: [
+        "ublksrv_tgt.cpp",
+        "tgt_loop.cpp",
+    ],
+    include_dirs: ["bionic/libc/kernel"],
+    local_include_dirs: [
+        "include",
+    ],
+    static_libs: [
+        "libublksrv",
+        "liburing",
+    ],
+    cflags: [
+        "-Wno-unused-parameter",
+        "-Wno-implicit-function-declaration",
+    ],
+}

@@ -7,12 +7,7 @@
 #include "ublksrv_priv.h"
 
 #define  parse_json(j, jbuf)	\
-	try {						\
-		j = json::parse(std::string(jbuf));	\
-	} catch (json::parse_error& ex) {		\
-		std::cerr << "parse error at byte " << ex.byte << std::endl; \
-		return -EINVAL;				\
-	}						\
+	j = json::parse(std::string(jbuf));
 
 using json = nlohmann::json;
 
